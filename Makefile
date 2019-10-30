@@ -735,7 +735,15 @@ logs:
 
 # Start all Lagoon Services
 up:
-	IMAGE_REPO=$(CI_BUILD_TAG) docker-compose -p $(CI_BUILD_TAG) up -d
+ifeq ($(ARCH), darwin)
+		IMAGE_REPO=$(CI_BUILD_TAG) docker-compose -p $(CI_BUILD_TAG) up -d
+else
+	# hack for linux to obtain the localhost IP
+	# we don't have a docker host DNS until this PR is merged: https://github.com/moby/moby/pull/40007
+	KEYCLOAK_URL=$$(minishift --profile $(CI_BUILD_TAG) ip | sed -E 's/[0-9]+$$/1/'):8088 \
+		IMAGE_REPO=$(CI_BUILD_TAG) \
+		docker-compose -p $(CI_BUILD_TAG) up -d
+endif
 
 down:
 	IMAGE_REPO=$(CI_BUILD_TAG) docker-compose -p $(CI_BUILD_TAG) down -v
