@@ -1,6 +1,7 @@
 ARG IMAGE_REPO
+ARG BASE_VERSION
 FROM ${IMAGE_REPO:-lagoon}/commons as commons
-FROM docker.elastic.co/elasticsearch/elasticsearch:7.3.0
+FROM docker.elastic.co/elasticsearch/elasticsearch:${BASE_VERSION}
 
 LABEL maintainer="amazee.io"
 ENV LAGOON=elasticsearch
@@ -15,7 +16,7 @@ COPY --from=commons /home /home
 
 RUN curl -sL https://github.com/krallin/tini/releases/download/v0.18.0/tini -o /sbin/tini && chmod a+x /sbin/tini
 
-COPY docker-entrypoint.sh.7 /lagoon/entrypoints/90-elasticsearch.sh
+COPY docker-entrypoint.sh /lagoon/entrypoints/90-elasticsearch.sh
 
 RUN chmod g+w /etc/passwd \
     && mkdir -p /home
