@@ -1,8 +1,9 @@
-ARG PHP_VERSION
-ARG PHP_IMAGE_VERSION
+ARG BASE_VERSION
 ARG IMAGE_REPO
 FROM ${IMAGE_REPO:-lagoon}/commons as commons
-FROM php:${PHP_IMAGE_VERSION}-fpm-alpine
+FROM php:${BASE_VERSION}-fpm-alpine
+
+ARG BASE_VERSION
 
 LABEL maintainer="amazee.io"
 ENV LAGOON=php
@@ -57,16 +58,12 @@ RUN apk add --no-cache fcgi \
         libwebp-dev \
         postgresql-dev \
     && apk add --no-cache --virtual .phpize-deps $PHPIZE_DEPS \
-    && if [ ${PHP_VERSION%.*} == "7.3" ]; then \
-        yes '' | pecl install -f apcu \
+    && if [ ${BASE_VERSION%.*} == "7" ]; then \
+        yes '' | pecl install -f apcu-5.1.18 \
         && yes '' | pecl install -f xdebug-2.7.0 \
         && yes '' | pecl install -f redis-4.3.0; \
-       elif [ ${PHP_VERSION%.*.*} == "7" ]; then \
-        yes '' | pecl install -f apcu \
-        && yes '' | pecl install -f xdebug \
-        && yes '' | pecl install -f redis-4.3.0; \
        fi \
-    && if [ ${PHP_VERSION%.*.*} == "5" ]; then \
+    && if [ ${BASE_VERSION%.*} == "5" ]; then \
         yes '' | pecl install -f apcu-4.0.11 \
         && yes '' | pecl install -f xdebug-2.5.5 \
         && yes '' | pecl install -f redis-4.3.0; \
@@ -74,7 +71,7 @@ RUN apk add --no-cache fcgi \
     && docker-php-ext-enable apcu redis xdebug \
     && docker-php-ext-configure gd --with-webp-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install -j4 bcmath gd gettext pdo_mysql mysqli pdo_pgsql pgsql shmop soap sockets opcache xsl zip \
-    && if [ ${PHP_VERSION%.*} == "7.1" ] || [ ${PHP_VERSION%.*} == "7.0" ] || [ ${PHP_VERSION%.*.*} == "5" ]; then \
+    && if [ ${BASE_VERSION%.*} == "7.1" ] || [ ${BASE_VERSION%.*} == "7.0" ] || [ ${BASE_VERSION%.*.*} == "5" ]; then \
         docker-php-ext-install mcrypt; \
        fi \
     && sed -i '1s/^/;Intentionally disabled. Enable via setting env variable XDEBUG_ENABLE to true\n;/' /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
