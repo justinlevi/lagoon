@@ -604,7 +604,7 @@ $(push-minishift-images):
 		docker push $$(cat minishift):30000/lagoon/$(image) | cat; \
 	fi
 
-push-docker-host-image: build/docker-host minishift/login-docker-registry
+push-docker-host-image: build\:docker-host minishift/login-docker-registry
 	docker tag $(CI_BUILD_TAG)/docker-host $$(cat minishift):30000/lagoon/docker-host
 	docker push $$(cat minishift):30000/lagoon/docker-host | cat
 
