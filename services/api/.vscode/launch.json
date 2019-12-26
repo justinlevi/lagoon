@@ -25,8 +25,6 @@
         "${fileBasenameNoExtension}",
         "--config",
         "jest.config.js",
-        "-t",
-        "#mutation #updateProject #availability"
       ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
