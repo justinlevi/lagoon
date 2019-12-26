@@ -9,12 +9,13 @@ import {
   getProjectsData,
   availabiltyProjectsCosts,
   extractMonthYear,
+  handleGetBillingGroupModifiers
 } from '../resources/billing/helpers';
 
 interface IGroupAttributes {
-  "lagoon-projects"?: [string];
+  'lagoon-projects'?: [string];
   comment?: [string];
-  [propName: string]: any
+  [propName: string]: any;
 }
 
 export interface Group {
@@ -41,6 +42,11 @@ interface GroupMembership {
   user: User;
   role: string;
   roleSubgroupId: string;
+}
+
+export interface GroupInput {
+  id?: string;
+  name?: string;
 }
 
 interface GroupEdit {
@@ -635,44 +641,49 @@ export const Group = (clients): GroupModel => {
 
     const projects = await getProjectsData(initialProjects, yearMonth);
 
+    const modifiers = await handleGetBillingGroupModifiers(group.id, yearMonth);
+
     const high = availabiltyProjectsCosts(
       projects,
       'HIGH',
       currency,
-    ) as availabilityProjectCostsType;
+      modifiers
+    );
     const standard = availabiltyProjectsCosts(
       projects,
       'STANDARD',
       currency,
-    ) as availabilityProjectCostsType;
+      modifiers
+    );
 
-    const availability = high.projects ? 'HIGH' : 'STANDARD';
+    const availability = (high as availabilityProjectCostsType).projects
+      ? 'HIGH'
+      : 'STANDARD';
 
     return { id, name, currency, availability, ...high, ...standard };
   };
 
   const allBillingGroupCosts = async yearMonth => {
-    const allGroups = await loadAllGroups();
-    const filterFn = (key, val) => group => group[key].includes(val);
-    const billingGroups = allGroups.filter(filterFn('type', 'billing'));
-
+    const allGroups: Group[] = await loadAllGroups();
+    const billingGroups = allGroups.filter(({ type }) => type === 'billing');
     const billingGroupCosts = [];
     for (let i = 0; i < billingGroups.length; i++) {
-      const group = billingGroups[i];
-      billingGroupCosts.push(
-        await billingGroupCost({ id: group.id }, yearMonth),
+      const costs = await billingGroupCost(
+        { id: billingGroups[i].id },
+        yearMonth
       );
+      billingGroupCosts.push(costs);
     }
 
     return billingGroupCosts
       .map(billingGroup => {
-        if (billingGroup.availability === 'STANDARD') {
+        if (billingGroup.availability === 'STANDARD' && billingGroup.projects) {
           billingGroup.projects.map(project => {
             project.environments = undefined;
           });
         }
 
-        if (billingGroup.availability === 'HIGH') {
+        if (billingGroup.availability === 'HIGH' && billingGroup.projects) {
           billingGroup.projects.map(project => {
             project.environments = undefined;
           });

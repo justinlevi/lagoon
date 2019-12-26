@@ -161,6 +161,7 @@ const typeDefs = gql`
     projects: [Project]
     currency: String
     billingSoftware: String
+    modifiers: [BillingModifier]
   }
 
   type Openshift {
@@ -499,6 +500,20 @@ const typeDefs = gql`
     files: [File]
   }
 
+  type BillingModifier {
+    id: Int
+    group: BillingGroup
+    startDate: String
+    endDate: String
+    discountFixed: Float
+    discountPercentage: Float
+    extraFixed: Float
+    extraPercentage: Float
+    customerComments: String
+    adminComments: String
+    weight: Int
+  }
+
   input DeleteEnvironmentInput {
     name: String!
     project: String!
@@ -562,6 +577,10 @@ const typeDefs = gql`
     Returns the costs for all billing groups
     """
     allBillingGroupsCost(month: String!): JSON
+    """
+    Returns the Billing Group Modifiers for a given Billing Group (all if no month filter defined)
+    """
+    billingModifiers(input: GroupInput!, month: String): [BillingModifier]
   }
 
   # Must provide id OR name
@@ -1006,6 +1025,43 @@ const typeDefs = gql`
     parentGroup: GroupInput
   }
 
+
+
+  input BillingModifierInput {
+    group: GroupInput!
+    startDate: String!
+    endDate: String!
+    discountFixed: Float
+    discountPercentage: Float
+    extraFixed: Float
+    extraPercentage: Float
+    customerComments: String
+    adminComments: String!
+    weight: Int
+  }
+
+  input BillingModifierPatchInput {
+    group: GroupInput
+    startDate: String
+    endDate: String
+    discountFixed: Float
+    discountPercentage: Float
+    extraFixed: Float
+    extraPercentage: Float
+    customerComments: String
+    adminComments: String
+    weight: Int
+  }
+
+  input UpdateBillingModifierInput {
+    id: Int!
+    patch: BillingModifierPatchInput!
+  }
+
+  input DeleteBillingModifierInput {
+    id: Int!
+  }
+
   input UpdateGroupPatchInput {
     name: String
   }
@@ -1185,6 +1241,11 @@ const typeDefs = gql`
     updateProjectBillingGroup(input: ProjectBillingGroupInput): Project
     removeProjectFromBillingGroup(input: ProjectBillingGroupInput): Project
     removeGroupsFromProject(input: ProjectGroupsInput!): Project
+
+    addBillingModifier(input: BillingModifierInput!): BillingModifier
+    updateBillingModifier(input: UpdateBillingModifierInput!): BillingModifier
+    deleteBillingModifier(input: DeleteBillingModifierInput!): String
+    deleteAllBillingModifiersByBillingGroup(input: GroupInput!): String
   }
 
   type Subscription {

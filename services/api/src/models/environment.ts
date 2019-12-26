@@ -150,6 +150,9 @@ export const projectEnvironmentsWithData: projectEnvWithDataType = async (
   return environments.map(environmentsMapFn);
 };
 
+
+// TODO - This is a TS version of the same method found in /Users/justinwinter/Projects/lagoon/services/api/src/resources/environment/resolvers.js
+// This is probably not ideal and there should be a single approach.
 export const environmentStorageMonthByEnvironmentId = async (eid, month) => {
   const str = `
     SELECT
@@ -296,9 +299,8 @@ export const environmentHitsMonthByEnvironmentId = async (
     return response;
   } catch (e) {
     if (
-      e.body.error.type &&
-      (e.body.error.type === 'index_not_found_exception' ||
-        e.body.error.type === 'security_exception')
+      e.body && e.body.error && e.body.error.type &&
+      (e.body.error.type === 'index_not_found_exception' || e.body.error.type === 'security_exception')
     ) {
       return { total: 0 };
     }
