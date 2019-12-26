@@ -63,7 +63,7 @@ interface GroupModel {
   loadAllGroups: () => Promise<Group[] | BillingGroup[]>;
   loadGroupById: (id: string) => Promise<Group | BillingGroup>;
   loadGroupByName: (name: string) => Promise<Group | BillingGroup>;
-  loadGroupByIdOrName: (groupInput: GroupEdit) => Promise<Group | BillingGroup>;
+  loadGroupByIdOrName: (groupInput: GroupInput) => Promise<Group | BillingGroup>;
   loadParentGroup: (groupInput: Group) => Promise<Group | BillingGroup>;
   loadGroupsByAttribute: (
     filterFn: AttributeFilterFn,
