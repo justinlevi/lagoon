@@ -106,6 +106,9 @@ export const getProjectsCosts = (currency, projects, modifiers: BillingModifier[
     total = extraPercentage ? total + (total * (extraPercentage / 100)) : total;
   });
 
+  // Ensure we don't have negative totals
+  total = Math.max(0, total);
+
   return ({
     hitCost,
     storageCost: storage,

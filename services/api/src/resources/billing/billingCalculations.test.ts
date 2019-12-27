@@ -593,9 +593,9 @@ describe('Billing Calculations', () => {
       await initializeGraphQL();
     });
 
-  //   beforeEach(async () => {
-  //     await deleteAllBillingModifiers({ name: defaultModifier.group.name })
-  // }, 50000);
+    afterEach(async () => {
+      await deleteAllBillingModifiers({ name: defaultModifier.group.name })
+  }, 50000);
 
     it('Total Costs with single `discountFixed` modifier. #modifiers, #discountFixed', () => {
       // Arrange
@@ -806,16 +806,16 @@ describe('Billing Calculations', () => {
       expect(result).toMatchObject(expected);
     });
 
-    it('Given a Billing modifier for a specific month, check that month before & after are not effected by the modifier. #modifiers, #specific-month', async () => {
+    it('Given a modifier for a specific month, check that month before, & after, are not effected. #modifiers, #specific-month', async () => {
       // Note - whatver modifiers are passed to the billing calculations will be utilized in calculating the totals.
       // Therefore, we implicitily test for the above assertion by testing that that billing calculations are correct
       // in normal situations, and that they are correct with modifiers. We also can test for
-      // the assertion for this test, by checking that the correct modifiers are returned given a specific month.
+      // the above assertion by checking that the correct modifiers are returned given a specific month.
 
-      //src/models/group.ts > billingGroupCost calls `availabilityProjectCosts(projects, 'HIGH|STANDARD', currency, modifiers)`
+      // The call graph starts with the function below
+      // src/models/group.ts > billingGroupCost calls `availabilityProjectCosts(projects, 'HIGH|STANDARD', currency, modifiers)`
 
-      // Arrange - create modifier for current month/year with an end date 1 month in the future
-      await deleteAllBillingModifiers({ name: defaultModifier.group.name })
+      // Arrange 
 
       const startDate = moment()
         .startOf('month')
@@ -830,6 +830,7 @@ describe('Billing Calculations', () => {
         discountFixed: 0,
         extraFixed: 1000
       };
+      // Create modifier for current month/year with an end date 1 month in the future
       const { data: addedModifier } = await addBillingModifier(modifier);
 
       if (!addedModifier.data.addBillingModifier) {
@@ -951,58 +952,96 @@ describe('Billing Calculations', () => {
       expect(currMonthCosts.modifiers.length).toBe(1);
     });
 
-    it('Given a Billing modifier that expires far in the future, and another modifier for a single month, ensure that both modifiers are applied for the single month, and that only the long running modifier is applied outside of the single modifier month', () => {
+    it('Given a Billing modifier that expires far in the future, and another modifier for a single month, ensure that both modifiers are applied for the single month, and that only the long running modifier is applied outside of the single modifier month. #modifiers, #future', async () => {
+      
       // Arrange
-      const mockProjects = [
-        {
-          availability: 'STANDARD',
-          month: '11',
-          year: '2019',
-          hits: 1000000,
-          storageDays: 10000,
-          prodHours: 720,
-          devHours: 1500
-        },
-        {
-          availability: 'STANDARD',
-          month: '11',
-          year: '2019',
-          hits: 1000000,
-          storageDays: 10000,
-          prodHours: 720,
-          devHours: 1500
-        }
-      ];
+      const foreverStartDate = moment().startOf('month').format('MM-DD-YYYY');
+      const foreverEndDate = moment().add(100, 'years').format('MM-DD-YYYY');
+      const foreverModifierData = { ...defaultModifier, startDate: foreverStartDate, endDate: foreverEndDate };
+      const { data: foreverModifier } = await addBillingModifier(foreverModifierData);
+
+      if (!foreverModifier.data.addBillingModifier) {
+        throw new Error(foreverModifier.errors[0].message);
+      }
+
+      const singleMonthStartDate = moment().startOf('month').format('MM-DD-YYYY');
+      const singleMonthEndDate = moment().endOf('month').format('MM-DD-YYYY');
+      const singleMonthModifierData = { ...defaultModifier, startDate: singleMonthStartDate, endDate: singleMonthEndDate };
+      const { data: singleMonthModifier } = await addBillingModifier(singleMonthModifierData);
+
+      if (!singleMonthModifier.data.addBillingModifier) {
+        throw new Error(singleMonthModifier.errors[0].message);
+      }
+
+      const lastMonth = moment().subtract(1, 'M').format('YYYY-MM').toString();
+      const nextMonth = moment().add(1, 'M').format('YYYY-MM').toString();
+      const nextYear = moment().add(1, "year").format('YYYY-MM').toString();
+      const currMonth = moment().format('YYYY-MM').toString();
+
       // Act
-      // Assert
-      expect(true).toBe(false);
+
+      // Get all modifiers for the billingGroup for last month
+      const { data: { data: { billingModifiers: lastMonthBillingGroupModifiers } } } 
+        = await billingModifiers( defaultModifier.group, lastMonth);
+
+      // Get all modifiers for the billing group for next month
+      const { data: { data: { billingModifiers: nextMonthBillingGroupModifiers } } } 
+        = await billingModifiers(defaultModifier.group, nextMonth);
+
+      // Get all modifiers for the billing group for next year
+      const { data: { data: { billingModifiers: nextYearBillingGroupModifiers } } } 
+        = await billingModifiers(defaultModifier.group, nextYear);
+
+      // Get all modifiers for the current month
+      const { data: { data: { billingModifiers: currMonthBillingGroupModifiers } } } 
+        = await billingModifiers(defaultModifier.group, currMonth);
+
+      // Assert 
+
+      expect(lastMonthBillingGroupModifiers.length).toBe(0);
+      expect(nextMonthBillingGroupModifiers.length).toBe(1);
+      expect(currMonthBillingGroupModifiers.length).toBe(2);
+      expect(nextYearBillingGroupModifiers.length).toBe(1);
     });
 
-    it('Given a single, or multiple, Billing modifiers that would generage a negative total, ensure it does not go below 0 (zero). , ', () => {
-      // Arrange
+
+
+
+    it('Given a single, or multiple, Billing modifiers that would generage a negative total, ensure it does not go below 0 (zero). #belowZero', async() => {
+      
+      // Arrange 
+      const startDate = moment().startOf('month').format('MM-DD-YYYY');
+      const endDate = moment().endOf('month').format('MM-DD-YYYY');
+      const modifier = { ...defaultModifier, startDate, endDate, discountFixed: 100_000};
+      await addBillingModifier(modifier);
+
       const mockProjects = [
         {
           availability: 'STANDARD',
-          month: '11',
-          year: '2019',
-          hits: 1000000,
-          storageDays: 10000,
-          prodHours: 720,
-          devHours: 1500
+          month: moment().month() + 1,
+          year: moment().year(),
+          hits: 0,
+          storageDays: 0,
+          prodHours: 0,
+          devHours: 0
         },
-        {
-          availability: 'STANDARD',
-          month: '11',
-          year: '2019',
-          hits: 1000000,
-          storageDays: 10000,
-          prodHours: 720,
-          devHours: 1500
-        }
       ];
+
+      // Get all modifiers for the current month
+      const currMonth = moment().format('YYYY-MM').toString();
+      const { data: { data: { billingModifiers: modifiers } } } = await billingModifiers( defaultModifier.group, currMonth);
+
       // Act
+
+      // Costs for current month
+      const currMonthCosts = availabiltyProjectsCosts( mockProjects, AVAILABILITY.STANDARD, CURRENCIES.CHF, modifiers );
+
       // Assert
-      expect(true).toBe(false);
+      expect(currMonthCosts.modifiers.length).toBe(1);
+      expect(currMonthCosts.modifiers[0].discountFixed).toBe(modifier.discountFixed)
+      expect(currMonthCosts.total).toBe(0);
     });
+
+
   });
 }); // End Billing Calculations

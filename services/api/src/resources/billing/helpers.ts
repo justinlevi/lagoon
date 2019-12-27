@@ -137,7 +137,6 @@ export const handleDeleteBillingModifier = async (id: number) => {
 export const handleDeleteAllBillingGroupModifier = async (gid: string) => {
   const sqlClient = getSqlClient(USE_SINGLETON);
   const sql = Sql.deleteAllBillingModifiersByBillingGroup(gid);
-  console.log(sql);
   await query(sqlClient, sql);
   return 'success';
 }

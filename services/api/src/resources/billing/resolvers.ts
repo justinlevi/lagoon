@@ -102,7 +102,6 @@ export const deleteAllBillingModifiersByBillingGroup = async (
 ) => {
   const { hasPermission } = context;
   const { input } = args;
-  console.log(input)
 
   // Permissions
   await hasPermission('group', 'delete');
