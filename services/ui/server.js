@@ -19,6 +19,14 @@ app
       res.status(200).sendFile('favicon.ico', {root: __dirname + '/src/static/images/favicons/'})
     ));
 
+    server.get('/billing', (req, res) => {
+      app.render(req, res, '/billing');
+    });
+
+    server.get('/billing/:billingGroupSlug', (req, res) => {
+      app.render(req, res, '/billing-group', { name: req.params.billingGroupSlug });
+    });
+
     server.get('/projects', (req, res) => {
       app.render(req, res, '/projects');
     });
