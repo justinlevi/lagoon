@@ -532,7 +532,7 @@ const typeDefs = gql`
     """
     Returns Group Object by a given name
     """
-    groupByName(name: String!): Group
+    groupByName(name: String!): GroupInterface
     """
     Returns Project Object by a given gitUrl (only the first one if there are multiple)
     """
@@ -1227,12 +1227,12 @@ const typeDefs = gql`
     deployEnvironmentBranch(input: DeployEnvironmentBranchInput!): String
     deployEnvironmentPullrequest(input: DeployEnvironmentPullrequestInput!): String
     deployEnvironmentPromote(input: DeployEnvironmentPromoteInput!): String
-    addGroup(input: AddGroupInput!): Group
-    updateGroup(input: UpdateGroupInput!): Group
+    addGroup(input: AddGroupInput!): GroupInterface
+    updateGroup(input: UpdateGroupInput!): GroupInterface
     deleteGroup(input: DeleteGroupInput!): String
     deleteAllGroups: String
-    addUserToGroup(input: UserGroupRoleInput!): Group
-    removeUserFromGroup(input: UserGroupInput!): Group
+    addUserToGroup(input: UserGroupRoleInput!): GroupInterface
+    removeUserFromGroup(input: UserGroupInput!): GroupInterface
     addGroupsToProject(input: ProjectGroupsInput): Project
     addBillingGroup(input: BillingGroupInput!): BillingGroup
     updateBillingGroup(input: UpdateBillingGroupInput!): BillingGroup
