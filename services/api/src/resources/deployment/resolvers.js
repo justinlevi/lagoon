@@ -865,7 +865,7 @@ const switchActiveStandby = async (
     data.task.id = sourceTaskData.addTask.id
 
     // then send the task to openshiftmisc to trigger the migration
-    await createMiscTask({ key: 'route:migrate', data });
+    await createMiscTask({ key: 'activeStandby:migrate', data });
 
     // return the task id and remote id
     var retData = {
