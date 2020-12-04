@@ -1,0 +1,28 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --build",
+    "start": "node -r dotenv-extended/config dist/server",
+    "dev": "NODE_ENV=development nodemon -e ts,graphql,json -x ts-node src/server.ts",
+    "test": "jest --forceExit --detectOpenHandles --maxWorkers=10",
+    "test:watch": "jest --forceExit --detectOpenHandles --maxWorkers=10 --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^26.0.16",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.4.4",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.1.2"
+  },
+  "dependencies": {
+    "apollo-server": "^2.19.0",
+    "graphql": "^15.4.0",
+    "nodemon": "^2.0.6"
+  }
+}

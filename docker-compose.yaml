@@ -288,6 +288,24 @@ services:
       lagoon.type: custom
       lagoon.template: services/api/.lagoon.app.yml
       lagoon.image: amazeeiolagoon/api:v1-12-1
+  billing-api:
+    image: ${IMAGE_REPO:-lagoon}/billing-api
+    command: yarn run dev
+    volumes:
+      - ./services/billing-api/src:/app/services/billing-api/src
+      - ./node-packages:/app/node-packages:delegated
+    environment:
+      - CI=${CI:-true}
+      - REGISTRY=172.17.0.1:8084 # Docker network bridge and forwarded port for harbor-nginx
+    depends_on:
+      - api-db
+      - keycloak
+    ports:
+      - '4000:4000'
+    labels:
+      lagoon.type: custom
+      lagoon.template: services/billing-api/.lagoon.app.yml
+      lagoon.image: amazeeiolagoon/billing-api:v1-12-1
   ui:
     image: ${IMAGE_REPO:-lagoon}/ui
     command: yarn run dev
