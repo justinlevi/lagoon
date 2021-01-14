@@ -1,12 +1,12 @@
 {
-  "name": "api",
+  "name": "billing-api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc --build",
-    "start": "node -r dotenv-extended/config dist/server",
-    "dev": "NODE_ENV=development nodemon -e ts,graphql,json -x ts-node src/server.ts",
+    "start": "node -r dotenv-extended/config dist/index",
+    "dev": "mkdir -p ../../node-packages/commons/dist && NODE_ENV=development nodemon",
     "test": "jest --forceExit --detectOpenHandles --maxWorkers=10",
     "test:watch": "jest --forceExit --detectOpenHandles --maxWorkers=10 --watch"
   },
@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "apollo-server": "^2.19.0",
-    "graphql": "^15.4.0",
-    "nodemon": "^2.0.6"
+    "graphql": "^15.4.0"
   }
 }

@@ -289,7 +289,7 @@ services:
       lagoon.template: services/api/.lagoon.app.yml
       lagoon.image: amazeeiolagoon/api:v1-12-1
   billing-api:
-    image: ${IMAGE_REPO:-lagoon}/billing-api
+    image: lagoon/billing-api
     command: yarn run dev
     volumes:
       - ./services/billing-api/src:/app/services/billing-api/src

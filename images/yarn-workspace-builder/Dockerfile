@@ -13,6 +13,7 @@ COPY node-packages /app/node-packages
 # package.json files for workspaces, otherwise
 # subdependencies won't be installed
 COPY services/api/package.json /app/services/api/
+COPY services/billing-api/package.json /app/services/billing-api/
 COPY services/auth-server/package.json /app/services/auth-server/
 COPY services/kubernetesbuilddeploy/package.json /app/services/kubernetesbuilddeploy/
 COPY services/kubernetesbuilddeploymonitor/package.json /app/services/kubernetesbuilddeploymonitor/

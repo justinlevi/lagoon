@@ -195,6 +195,7 @@ $(build-taskimages):
 # Variables of service images we manage and build
 services :=	api \
 			api-db \
+			billing-api \
 			api-redis \
 			auth-server \
 			auto-idler \
@@ -258,6 +259,7 @@ $(build-services):
 # Dependencies of Service Images
 build/auth-server build/logs2email build/logs2slack build/logs2rocketchat build/logs2microsoftteams build/openshiftbuilddeploy build/openshiftbuilddeploymonitor build/openshiftjobs build/openshiftjobsmonitor build/openshiftmisc build/openshiftremove build/backup-handler build/kubernetesbuilddeploy build/kubernetesdeployqueue build/kubernetesbuilddeploymonitor build/kubernetesjobs build/kubernetesjobsmonitor build/kubernetesmisc build/kubernetesremove build/controllerhandler build/webhook-handler build/webhooks2tasks build/api build/ui: build/yarn-workspace-builder
 build/api-db: services/api-db/Dockerfile
+build/billing-api: services/billing-api/Dockerfile
 build/api-redis: services/api-redis/Dockerfile
 build/auto-idler: build/oc
 build/broker-single: build/rabbitmq
@@ -1023,4 +1025,4 @@ ui-development: build/api build/api-db build/local-api-data-watcher-pusher build
 
 .PHONY: api-development
 api-development: build/api build/api-db build/local-api-data-watcher-pusher build/keycloak build/keycloak-db build/broker build/broker-single build/api-redis
-	IMAGE_REPO=$(CI_BUILD_TAG) docker-compose -p $(CI_BUILD_TAG) --compatibility up -d api api-db local-api-data-watcher-pusher keycloak keycloak-db broker api-redis
+	IMAGE_REPO=$(CI_BUILD_TAG) docker-compose -p $(CI_BUILD_TAG) --compatibility up -d api api-db billing-api local-api-data-watcher-pusher keycloak keycloak-db broker api-redis
