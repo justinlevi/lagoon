@@ -19,7 +19,7 @@ const requestConfig = (token) => ({
 
 export const initializeGraphQL = async () => {
   // GET JWT Token
-  const token = 'API-GRAPHQL-TOKEN-HERE'
+  const token = 'PROD_API_TOKEN_HERE'
   const config = requestConfig(token);
   axiosInstance = axios.create(config);
   return axiosInstance;
@@ -107,10 +107,9 @@ export const projectByName = ( name: string, query: string) => graphql(query, { 
 
 export const addOrUpdateEnvironmentStorage = (input) => graphql(ADD_OR_UPDATE_ENVIRONMENT_STORAGE, { input })
 
-// TESTING - comment the above
+//TESTING - comment the above
 // export const addOrUpdateEnvironmentStorage = (input) => {
-//   console.log('UPDATE THE FOLLOWING')
-//   console.table(input)
+//   console.log(`UPDATING...`)
 // }
 
 
@@ -128,6 +127,8 @@ const main = async () => {
   // loop over each "old" projects
   oldProjects.forEach(async project => {
 
+    console.log(`UPDATING ${project.name}`);
+
     // get the full data for the project, including the storage data
     const { data: projectByNameData} = await projectByName(project.name, PROJECT_BY_NAME);
 
@@ -140,10 +141,20 @@ const main = async () => {
     const newProjectCreatedDate = new Date(newProjectByNameData.data.projectByName.created); // format: "2019-07-22 00:22:31",
     console.log(`${project.name} PROJECT CREATED DATE: ${newProjectCreatedDate}`)
 
-    const environments = projectByNameData.data.projectByName.environments;
+    const environmentsOld = projectByNameData.data.projectByName.environments;
+    const environmentsNew = newProjectByNameData.data.projectByName.environments;
 
-    environments.forEach( environment => {
-      environment.storages.forEach(async storage => {
+
+    environmentsOld.forEach( environmentOld => {
+
+      // Get the new environment ID value
+      const environmentNew = environmentsNew.find(o => o.name === environmentOld.name);
+      if (environmentNew === undefined){
+        console.log('The old environment name was not found on the new project environment!??')
+        return;
+      }
+
+      environmentOld.storages.forEach(async storage => {
 
         // don't copy over existing new data
         if (new Date(storage.updated) > newProjectCreatedDate) {
@@ -151,9 +162,11 @@ const main = async () => {
           return;
         }
 
+        console.log(`UPDATE THE ENVIRONMENT: ${environmentOld.id} : ${environmentNew.id}`)
+
         // addOrUpdateEnvironmentStorage
         const input = {
-          environment: environment.id,
+          environmentOld: environmentNew.id,
           persistentStorageClaim: storage.persistentStorageClaim,
           bytesUsed: storage.bytesUsed,
           updated: storage.updated
