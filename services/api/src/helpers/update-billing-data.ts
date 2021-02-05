@@ -105,13 +105,13 @@ export const allProjects = () => graphql(ALL_PROJECTS);
 export const projectByName = ( name: string, query: string) => graphql(query, { name });
 
 
-// export const addOrUpdateEnvironmentStorage = (input) => graphql(ADD_OR_UPDATE_ENVIRONMENT_STORAGE, { input })
+export const addOrUpdateEnvironmentStorage = (input) => graphql(ADD_OR_UPDATE_ENVIRONMENT_STORAGE, { input })
 
 // TESTING - comment the above
-export const addOrUpdateEnvironmentStorage = (input) => {
-  console.log('UPDATE THE FOLLOWING')
-  console.table(input)
-}
+// export const addOrUpdateEnvironmentStorage = (input) => {
+//   console.log('UPDATE THE FOLLOWING')
+//   console.table(input)
+// }
 
 
 
