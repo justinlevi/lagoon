@@ -8,7 +8,7 @@ const exec = promisify(require('child_process').exec);
 let axiosInstance: AxiosInstance;
 
 const requestConfig = (token) => ({
-  baseURL: 'https://api.lagoon.amazeeio.cloud/graphql',
+  baseURL: 'https://api.lagoon.amazeeio.cloud',
   timeout: 60000,
   headers: {
     Authorization:
@@ -17,9 +17,9 @@ const requestConfig = (token) => ({
   }
 });
 
-export const initializeGraphQL = async () => {
+const initializeGraphQL = async () => {
   // GET JWT Token
-  const token = 'PROD_API_TOKEN_HERE'
+  const token = ''
   const config = requestConfig(token);
   axiosInstance = axios.create(config);
   return axiosInstance;
@@ -47,7 +47,7 @@ const graphql: AxiosGraphQL = async (query: String, variables?: any) => {
   });
 }
 
-const ALL_PROJECTS = `
+const ALL_PROJECTS_QUERY = `
   query allProjects {
     allProjects{
       id, name
@@ -56,16 +56,17 @@ const ALL_PROJECTS = `
 `;
 
 
-export const PROJECT_BY_NAME = `
-query projectByName($name:String!) {
-  projectByName(name:$name){
+const PROJECT_BY_NAME_QUERY = `
+query projectByName($name: String!) {
+  projectByName(name: $name){
     id
     name
     created
-    environments{
+    environments (includeDeleted: true){
       id
       name
       created
+      deleted
       openshiftProjectName
       storages{
         id
@@ -78,74 +79,125 @@ query projectByName($name:String!) {
 }
 `;
 
-export const PROJECT_BY_NAME_SIMPLE = `
-query projectByName($name:String!) {
-  projectByName(name:$name){
+const PROJECT_BY_NAME_SIMPLIFIED_QUERY = `
+query projectByName($name: String!) {
+  projectByName(name: $name){
     id
     name
     created
-    environments{
+    environments (includeDeleted: true){
       id
       name
       created
+      deleted
       openshiftProjectName
     }
   }
 }
 `;
 
-export const ADD_OR_UPDATE_ENVIRONMENT_STORAGE = `
+const ADD_OR_UPDATE_ENVIRONMENT_STORAGE_MUTATION = `
 mutation addOrUpdateEnvironmentStorage($input: AddOrUpdateEnvironmentStorageInput!) {
-  addOrUpdateEnvironmentStorage(input:$input){
+  addOrUpdateEnvironmentStorage(input: $input){
     id
   }
-}`;
-
-export const allProjects = () => graphql(ALL_PROJECTS);
-export const projectByName = ( name: string, query: string) => graphql(query, { name });
+}
+`;
 
 
-export const addOrUpdateEnvironmentStorage = (input) => graphql(ADD_OR_UPDATE_ENVIRONMENT_STORAGE, { input })
+const UPDATE_ENVIRONMENT_MUTATION = `
+mutation updateEnvironment($input: UpdateEnvironmentInput!) {
+  updateEnvironment(input: $input){
+    id
+  }
+}
+`;
 
-//TESTING - comment the above
-// export const addOrUpdateEnvironmentStorage = (input) => {
-//   console.log(`UPDATING...`)
+
+const allProjects = () => graphql(ALL_PROJECTS_QUERY);
+const projectByName = ( name: string, query: string) => graphql(query, { name });
+const addOrUpdateEnvironmentStorage = (input) => graphql(ADD_OR_UPDATE_ENVIRONMENT_STORAGE_MUTATION, { input });
+const updateEnvironment = (input) => graphql(UPDATE_ENVIRONMENT_MUTATION, { input });
+
+//TESTING - Uncomment out the below
+// const addOrUpdateEnvironmentStorage = (input) => {
+//   console.log(`UPDATING Environment Storage...`);
+//   console.table(input);
 // }
 
+// const updateEnvironment = (input) => {
+//   console.log('UPDATING Environment...');
+//   console.table(input);
+// }
 
-
-const main = async () => {
+const fetchOldProjects = async () => {
   const { data: allProjectsData } = await allProjects();
-
   if (!allProjectsData.data.allProjects) {
     throw new Error(allProjectsData.errors[0].message);
   }
 
   // get all migrated projects - projects that have `-old`
   const oldProjects = allProjectsData.data.allProjects.filter(({name}) => name.includes('old'))
+  return oldProjects;
+}
+
+const fetchOldAndNewProjectData = async (project) => {
+  // get the full data for the project, including the storage data
+  const { data: oldProjectByNameData } = await projectByName(project.name, PROJECT_BY_NAME_QUERY);
+
+  // Get the Environment creation date for the NEW project/environment - used for limiting the update so we don't copy over existing new data
+  const { data: newProjectByNameData } = await projectByName(project.name.replace('-old', ''), PROJECT_BY_NAME_SIMPLIFIED_QUERY);
+
+  return {
+    oldProject: oldProjectByNameData.data.projectByName,
+    newProject: newProjectByNameData.data.projectByName ? newProjectByNameData.data.projectByName : undefined
+  }
+}
+
+const updateDeletedEnvironmentProjectId = async (environment, projectId) => {
+  if (environment.deleted === "0000-00-00 00:00:00"){
+    try {
+      const updateDeletedEnvironmentInput = {
+        id: environment.id,
+        patch: {
+          project: projectId
+        }
+      }
+      const updateDeletedEnvironmentProjectId = await updateEnvironment(updateDeletedEnvironmentInput);
+    } catch (error) {
+      console.debug(error)
+    }
+  }
+
+}
+
+
+const main = async () => {
+
+  const oldProjects = await fetchOldProjects();
 
   // loop over each "old" projects
   oldProjects.forEach(async project => {
 
     console.log(`UPDATING ${project.name}`);
 
-    // get the full data for the project, including the storage data
-    const { data: projectByNameData} = await projectByName(project.name, PROJECT_BY_NAME);
-
-    // Get the Environment creation date for the NEW project/environment - used for limiting the update so we don't copy over existing new data
-    const { data: newProjectByNameData } = await projectByName(project.name.replace('-old', ''), PROJECT_BY_NAME_SIMPLE);
-
-    if (!newProjectByNameData.data.projectByName){
+    const { oldProject, newProject } = await fetchOldAndNewProjectData(project);
+    // If we can't find the new project, skip to the next
+    if (!newProject){
       return;
     }
-    const newProjectCreatedDate = new Date(newProjectByNameData.data.projectByName.created); // format: "2019-07-22 00:22:31",
+
+    const newProjectCreatedDate = new Date(newProject.created); // format: "2019-07-22 00:22:31",
     console.log(`${project.name} PROJECT CREATED DATE: ${newProjectCreatedDate}`)
 
-    const environmentsOld = projectByNameData.data.projectByName.environments;
-    const environmentsNew = newProjectByNameData.data.projectByName.environments;
+    const environmentsOld = oldProject.environments;
+    const environmentsNew = newProject.environments;
 
 
-    environmentsOld.forEach( environmentOld => {
+    environmentsOld.forEach( async environmentOld => {
+
+      // Update the project ID of deleted environments to point from the -old project to the new one
+      await updateDeletedEnvironmentProjectId(environmentOld, project.id)
 
       // Get the new environment ID value
       const environmentNew = environmentsNew.find(o => o.name === environmentOld.name);
@@ -162,16 +214,34 @@ const main = async () => {
           return;
         }
 
-        console.log(`UPDATE THE ENVIRONMENT: ${environmentOld.id} : ${environmentNew.id}`)
+        console.log(`Add the old storage data to the new environment: ${environmentOld.id} : ${environmentNew.id}`)
 
         // addOrUpdateEnvironmentStorage
-        const input = {
-          environmentOld: environmentNew.id,
-          persistentStorageClaim: storage.persistentStorageClaim,
-          bytesUsed: storage.bytesUsed,
-          updated: storage.updated
-        };
-        const result = await addOrUpdateEnvironmentStorage(input)
+        try {
+          const addOrUpdateEnvironmentStorageInput = {
+            environment: environmentNew.id,
+            persistentStorageClaim: storage.persistentStorageClaim,
+            bytesUsed: storage.bytesUsed,
+            updated: storage.updated
+          };
+          const addOrUpdateEnvironmentStorageResult = await addOrUpdateEnvironmentStorage(addOrUpdateEnvironmentStorageInput);
+        } catch (error) {
+          console.debug(error)
+        }
+
+        // Update the created date of the new environment to match the old one
+        try {
+          const updateEnvironmentInput = {
+            id: environmentNew.id,
+            patch:{
+              created: environmentOld.created
+            }
+          };
+          const updateEnvironmentCreatedDateResult = await updateEnvironment(updateEnvironmentInput);
+        } catch (error) {
+          console.debug(error)
+        }
+
       });
     });
 
