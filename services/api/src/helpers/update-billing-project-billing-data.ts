@@ -59,6 +59,7 @@ query projectByName($name: String!) {
     id
     name
     created
+    metadata
     environments (includeDeleted: true){
       id
       name
@@ -82,6 +83,7 @@ query projectByName($name: String!) {
     id
     name
     created
+    metadata
     environments (includeDeleted: true){
       id
       name
@@ -119,7 +121,7 @@ mutation updateProjectBillingGroup($input: ProjectBillingGroupInput) {
 `;
 
 const UPDATE_PROJECT_METADATA = `
-mutation updateProjectAvailability($input: UpdateProjectInput!) {
+mutation updateProjectMetadata($input: UpdateProjectInput!) {
   updateProject(input: $input){
     id, name, availability
   }
@@ -128,6 +130,8 @@ mutation updateProjectAvailability($input: UpdateProjectInput!) {
 
 // const allProjects = () => graphql(ALL_PROJECTS_QUERY);
 const projectByName = (name: string, query: string) => graphql(query, { name });
+
+// MUTATIONS BELOW - CAREFUL... COMMENT THESE OUT FOR TESTING IN FAVOR OF MOCKS
 // const addOrUpdateEnvironmentStorage = (input) => graphql(ADD_OR_UPDATE_ENVIRONMENT_STORAGE_MUTATION, { input });
 // const updateEnvironment = (input) => graphql(UPDATE_ENVIRONMENT_MUTATION, { input });
 // const updateProjectBillingGroup = (input) => graphql(UPDATE_PROJECT_BILLING_GROUP, { input });
@@ -153,17 +157,6 @@ const updateProjectMetadata = input => {
   console.log('MOCK FN - UPDATING Project Metadata...');
   console.table(input);
 };
-
-// const fetchOldProjects = async () => {
-//   const { data: allProjectsData } = await allProjects();
-//   if (!allProjectsData.data.allProjects) {
-//     throw new Error(allProjectsData.errors[0].message);
-//   }
-
-//   // get all migrated projects - projects that have `-old`
-//   const oldProjects = allProjectsData.data.allProjects.filter(({name}) => name.includes('old'))
-//   return oldProjects;
-// }
 
 const fetchOldAndNewProjectData = async project => {
   // get the full data for the project, including the storage data
@@ -205,11 +198,6 @@ const updateDeletedEnvironmentProjectId = async (environment, projectId) => {
 };
 
 const main = async arg => {
-  // const oldProjects = await fetchOldProjects();
-
-  // // loop over each "old" projects
-  // oldProjects.forEach(async project => {
-
   const project = {
     name: arg
   };
@@ -221,7 +209,12 @@ const main = async arg => {
   });
   // If we can't find the new project, skip to the next
   if (!newProject) {
-    return;
+    throw new Error('NEW PROJECT NOT FOUND');
+  }
+
+  // CHECK METADATA TO SEE IF IT'S ALREADY BEEN MIGRATED
+  if (oldProject && oldProject.metadata && oldProject.metadata.migrated) {
+    throw new Error('PROJECT ALREADY MIGRATED');
   }
 
   const newProjectCreatedDate = new Date(newProject.created); // format: "2019-07-22 00:22:31",
@@ -309,8 +302,6 @@ const main = async arg => {
   } catch (error) {
     console.debug(error);
   }
-
-  // });
 };
 
 const args = process.argv.slice(2);
