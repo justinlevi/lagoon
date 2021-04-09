@@ -37,7 +37,10 @@ export const updateProject = async name => {
   const environmentsOld = oldProject.environments;
   const environmentsNew = newProject.environments;
 
-  environmentsOld.forEach(async environmentOld => {
+  // environmentsOld.forEach(async environmentOld => {
+  for (let i = 0; i < environmentsOld.length; i++) {
+    const environmentOld = environmentsOld[i];
+
     // Update the project ID of deleted environments to point from the -old project to the new one
     await updateDeletedEnvironmentProjectId(environmentOld, newProject.id);
 
@@ -49,14 +52,16 @@ export const updateProject = async name => {
       console.log(
         'The old environment name was not found on the new project environment!??'
       );
-      return;
+      continue;
     }
 
-    environmentOld.storages.forEach(async storage => {
+    // environmentOld.storages.forEach(async storage => {
+    for (let x = 0; x < environmentOld.storages.length; x++) {
+      const storage = environmentOld.storages[x];
       // don't copy over existing new data
       if (new Date(storage.updated) > newProjectCreatedDate) {
         // console.log('skipping new data');
-        return;
+        continue;
       }
 
       console.log(
@@ -75,21 +80,21 @@ export const updateProject = async name => {
       } catch (error) {
         console.debug(error);
       }
+    }
 
-      // Update the created date of the new environment to match the old one
-      try {
-        const updateEnvironmentInput = {
-          id: environmentNew.id,
-          patch: {
-            created: environmentOld.created
-          }
-        };
-        await updateEnvironment(updateEnvironmentInput);
-      } catch (error) {
-        console.debug(error);
-      }
-    });
-  });
+    // Update the created date of the new environment to match the old one
+    try {
+      const updateEnvironmentInput = {
+        id: environmentNew.id,
+        patch: {
+          created: environmentOld.created
+        }
+      };
+      await updateEnvironment(updateEnvironmentInput);
+    } catch (error) {
+      console.debug(error);
+    }
+  }
 
   // Move the -old project to the `migration -old - DISREGARD` billing group
   const projectBillingGroupInput = {

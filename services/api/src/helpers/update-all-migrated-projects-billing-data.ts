@@ -1,4 +1,4 @@
-// npx ts-node src/helpers/update-all-migrated-projects-billing-data.ts
+// npx ts-node src/helpers/update-all-migrated-projects-billing-data.ts 2
 import { fetchOldProjects } from './graphqlQueries';
 import { updateProject } from './update-migrated-project-billing-data';
 
